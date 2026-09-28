@@ -2,6 +2,9 @@
 #include <string>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/select.h>
+#include <fcntl.h>
+#include <unistd.h>
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -9,7 +12,14 @@ int main(int argc, char *argv[])
     string manIP = argv[1];
     int manPort = stoi(argv[2]);
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    int pSock = socket(AF_INET, SOCK_DGRAM, 0);
 
+    int f = fcntl(pSock, F_GETFL, 0);
+    fcntl(pSock, F_SETFL, f | O_NONBLOCK);
+
+    int inFlag = fcntl(0, F_GETFL, 0);
+    fcntl(0, F_SETFL, inFlag | O_NONBLOCK);
+    
     sockaddr_in manAdd{};
     manAdd.sin_family = AF_INET;
     manAdd.sin_port = htons(manPort);
@@ -18,6 +28,169 @@ int main(int argc, char *argv[])
     sockaddr_in peerAdd{};
     peerAdd.sin_family = AF_INET;
     peerAdd.sin_addr.s_addr = INADDR_ANY;
+
+    string names[20];
+    string ips[20];
+    int pPorts[20];
+    int id = -1;
+    int ringSize = 0;
+    
+    while(true)
+    {
+        char input[1024];
+        int inputSize = read(0, input, 1023);
+
+        if (inputSize > 0)
+        {
+            input[inputSize] = '\0';
+
+            string command = input;
+            string part[10];
+            int partNum = 0;
+
+            for (int i = 0; i < command.length(); i++)
+            {
+                if (command[i] == ' ')
+                {
+                    partNum++;
+                }
+                else if (command[i] != '\n')
+                {
+                    part[partNum] = part[partNum] + command[i];
+                }
+            }
+
+            if (part[0] == "register")
+            {
+                string name = part[1];
+                string ip = part[2];
+                int mPort = stoi(part[3]);
+                int pPort = stoi(part[4]);
+                
+                peerAdd.sin_port = htons(mPort);
+                bind(sock, (sockaddr *)&peerAdd, sizeof(peerAdd));
+
+                sockaddr_in pAdd{};
+                pAdd.sin_family = AF_INET;
+                pAdd.sin_addr.s_addr = INADDR_ANY;
+                pAdd.sin_port = htons(pPort);
+                bind(pSock, (sockaddr *)&pAdd, sizeof(pAdd));
+                
+                sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+                char mess[1024];
+
+                sockaddr_in replyAdd;
+                socklen_t replyAddSize = sizeof(replyAdd);
+
+                 int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+
+                 mess[messSize] = '\0';
+
+                 cout << mess << endl;
+            }
+            else if (part[0] == "setup-dht")
+            {
+                string name = part[1];
+                int n = stoi(part[2]);
+                int year = stoi(part[3]);
+
+                sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+                char mess[1024];
+
+                sockaddr_in replyAdd;
+                socklen_t replyAddSize = sizeof(replyAdd);
+
+                int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+
+                mess[messSize] = '\0';
+
+                cout << mess << endl;
+
+                string reply = mess;
+                string replyPart[100];
+                int replyNum = 0;
+
+                for (int i = 0; i < reply.length(); i++)
+                {
+                    if (reply[i] == ' ')
+                    {
+                        replyNum++;
+                    }
+                    else
+                    {
+                        replyPart[replyNum] = replyPart[replyNum] + reply[i];
+                    }
+                }
+
+                if (replyPart[0] == "SUCCESS")
+                {
+                    id = 0;
+                    ringSize = n;
+
+                    for (int i = 0; i < n; i++)
+                    {
+                        names[i] = replyPart[1 + i * 3];
+                        ips[i] = replyPart[2 + i * 3];
+                        pPorts[i] = stoi(replyPart[3 + i * 3]);
+                    }
+
+                    for (int i = 1; i < n; i++)
+                    {
+                        string setMess = "set-id " + to_string(i) + " " + to_string(n);
+
+                        for (int j = 0; j < n; j++)
+                        {
+                            setMess = setMess + " " + names[j];
+                            setMess = setMess + " " + ips[j];
+                            setMess = setMess + " " + to_string(pPorts[j]);
+                        }
+
+                        sockaddr_in toAdd{};
+                        toAdd.sin_family = AF_INET;
+                        toAdd.sin_port = htons(pPorts[i]);
+                        inet_pton(AF_INET, ips[i].c_str(), &toAdd.sin_addr);
+
+                        sendto(pSock, setMess.c_str(), setMess.size(), 0, (sockaddr *)&toAdd, sizeof(toAdd));
+                    }
+                }
+            }
+        }
+
+        char peerMess[1024];
+
+        sockaddr_in fromAdd;
+        socklen_t fromAddSize = sizeof(fromAdd);
+
+        int peerMessSize = recvfrom(pSock, peerMess, 1023, 0, (sockaddr *)&fromAdd, &fromAddSize);
+
+        if (peerMessSize > 0)
+        {
+            peerMess[peerMessSize] = '\0';
+
+            string peerCommand = peerMess;
+            string peerPart[100];
+            int peerPartNum = 0;
+
+            for (int i = 0; i < peerCommand.length(); i++)
+            {
+                if (peerCommand[i] == ' ')
+                {
+                    peerPartNum++;
+                }
+                else
+                {
+                    peerPart[peerPartNum] = peerPart[peerPartNum] + peerCommand[i];
+                }
+            }
+
+            if (peerPart[0] == "set-id")
+            {
+                id = stoi(peerPart[1]);
+                ringSize = stoi(peerPart[2]);
+            }
+        }
+    }
 
     return 0;
 }
