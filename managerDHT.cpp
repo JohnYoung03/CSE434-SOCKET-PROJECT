@@ -49,6 +49,50 @@ int main(int argc, char *argv[])
                 part[partNum] = part[partNum] + command[i];
             }
         }
+        if (part[0] == "register")
+        {
+            string name = part[1];
+            string ip = part[2];
+            int mPort = stoi(part[3]);
+            int pPort = stoi(part[4]);
+
+            bool works = true;
+
+            for (int i = 0; i < peerNum; i++)
+            {
+                if (names[i] == name)
+                {
+                    works = false;
+                }
+
+                if (mPorts[i] == mPort || mPorts[i] == pPort ||
+                    pPorts[i] == mPort || pPorts[i] == pPort)
+                {
+                    works = false;
+                }
+            }
+
+            string reply;
+
+            if (works == true)
+            {
+                names[peerNum] = name;
+                ips[peerNum] = ip;
+                mPorts[peerNum] = mPort;
+                pPorts[peerNum] = pPort;
+                states[peerNum] = "Free";
+
+                peerNum = peerNum + 1;
+
+                reply = "SUCCESS";
+            }
+            else
+            {
+                reply = "FAILURE";
+            }
+
+            sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+        }
     }
     return 0;
 }
