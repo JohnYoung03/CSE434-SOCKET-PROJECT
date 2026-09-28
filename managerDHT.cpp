@@ -2,6 +2,8 @@
 #include <string>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <cstdlib>
+#include <ctime>
 using namespace std;
 
 int main(int argc, char *argv[])
