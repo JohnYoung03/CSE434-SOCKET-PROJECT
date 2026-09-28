@@ -14,6 +14,10 @@ int main(int argc, char *argv[])
     manAdd.sin_family = AF_INET;
     manAdd.sin_port = htons(manPort);
     inet_pton(AF_INET, manIP.c_str(), &manAdd.sin_addr);
+    
+    sockaddr_in peerAdd{};
+    peerAdd.sin_family = AF_INET;
+    peerAdd.sin_addr.s_addr = INADDR_ANY;
 
     return 0;
 }
