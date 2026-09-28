@@ -8,5 +8,6 @@ int main(int argc, char *argv[])
 {
     string managerIP = argv[1];
     int managerPort = stoi(argv[2]);
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
     return 0;
 }
