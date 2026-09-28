@@ -23,6 +23,10 @@ int main(int argc, char *argv[])
     int pPorts[20];
     string states[20];
     int peerNum = 0;
+
+    bool dhtExists = false;
+    bool waiting = false;
+    string leader;
     
     while(true){
         char mess[1024];
