@@ -96,6 +96,85 @@ int main(int argc, char *argv[])
             }
 
             sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+        } else if (part[0] == "setup-dht")
+        {
+            string name = part[1];
+            int n = stoi(part[2]);
+            int year = stoi(part[3]);
+
+            bool works = true;
+            int leaderNum = -1;
+
+            for (int i = 0; i < peerNum; i++)
+            {
+                if (names[i] == name)
+                {
+                    leaderNum = i;
+                }
+            }
+
+            if (leaderNum == -1)
+            {
+                works = false;
+            }
+
+            if (n < 3)
+            {
+                works = false;
+            }
+
+            if (peerNum < n)
+            {
+                works = false;
+            }
+
+            if (dhtExists == true)
+            {
+                works = false;
+            }
+
+            string reply;
+
+            if (works == true)
+            {
+                states[leaderNum] = "Leader";
+                leader = name;
+                dhtExists = true;
+                waiting = true;
+
+                int picked = 1;
+
+                for (int i = 0; i < peerNum && picked < n; i++)
+                {
+                    if (i != leaderNum && states[i] == "Free")
+                    {
+                        states[i] = "InDHT";
+                        picked = picked + 1;
+                    }
+                }
+
+                reply = "SUCCESS";
+
+                reply = reply + " " + names[leaderNum];
+                reply = reply + " " + ips[leaderNum];
+                reply = reply + " " + to_string(pPorts[leaderNum]);
+
+                for (int i = 0; i < peerNum; i++)
+                {
+                    if (states[i] == "InDHT")
+                    {
+                        reply = reply + " " + names[i];
+                        reply = reply + " " + ips[i];
+                        reply = reply + " " + to_string(pPorts[i]);
+                    }
+                }
+            }
+            else
+            {
+                reply = "FAILURE";
+            }
+
+            sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
         }
     }
     return 0;
