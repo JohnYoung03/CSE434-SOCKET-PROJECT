@@ -56,7 +56,14 @@ int main(int argc, char *argv[])
                 part[partNum] = part[partNum] + command[i];
             }
         }
-        if (part[0] == "register")
+
+        if (waiting == true && part[0] != "dht-complete")
+        {
+            string reply = "FAILURE";
+
+            sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+        }
+        else if (part[0] == "register")
         {
             string name = part[1];
             string ip = part[2];
@@ -64,6 +71,10 @@ int main(int argc, char *argv[])
             int pPort = stoi(part[4]);
 
             bool works = true;
+            if (mPort == pPort)
+            {
+                works = false;
+            }
 
             for (int i = 0; i < peerNum; i++)
             {
@@ -172,6 +183,23 @@ int main(int argc, char *argv[])
                         reply = reply + " " + to_string(pPorts[i]);
                     }
                 }
+            }
+            else
+            {
+                reply = "FAILURE";
+            }
+
+            sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+        }
+        else if (part[0] == "dht-complete")
+        {
+            string name = part[1];
+            string reply;
+
+            if (name == leader)
+            {
+                waiting = false;
+                reply = "SUCCESS";
             }
             else
             {
