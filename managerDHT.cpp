@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
 {
     int portNum = std::stoi(argv[1]);
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    srand(time(0));
 
     sockaddr_in sockAddr{};
 
