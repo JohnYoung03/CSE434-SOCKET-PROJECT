@@ -25,7 +25,16 @@ int main(int argc, char *argv[])
     int peerNum = 0;
     
     while(true){
-        
+        char mess[1024];
+
+        sockaddr_in peerAddr;
+        socklen_t peerAddrSize = sizeof(peerAddr);
+
+        int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&peerAddr, &peerAddrSize);
+
+        mess[messSize] = '\0';
+
+        string command = mess;
     }
     return 0;
 }
