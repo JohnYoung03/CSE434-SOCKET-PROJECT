@@ -35,6 +35,20 @@ int main(int argc, char *argv[])
         mess[messSize] = '\0';
 
         string command = mess;
+        string part[10];
+        int partNum = 0;
+
+        for (int i = 0; i < command.length(); i++)
+        {
+            if (command[i] == ' ')
+            {
+                partNum++;
+            }
+            else
+            {
+                part[partNum] = part[partNum] + command[i];
+            }
+        }
     }
     return 0;
 }
