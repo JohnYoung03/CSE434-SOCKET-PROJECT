@@ -145,17 +145,18 @@ int main(int argc, char *argv[])
                 dhtExists = true;
                 waiting = true;
 
-                int picked = 1;
+            int picked = 1;
 
-                for (int i = 0; i < peerNum && picked < n; i++)
+            while (picked < n)
+            {
+                int randomNum = rand() % peerNum;
+
+                if (randomNum != leaderNum && states[randomNum] == "Free")
                 {
-                    if (i != leaderNum && states[i] == "Free")
-                    {
-                        states[i] = "InDHT";
-                        picked = picked + 1;
-                    }
+                    states[randomNum] = "InDHT";
+                    picked = picked + 1;
                 }
-
+            }
                 reply = "SUCCESS";
 
                 reply = reply + " " + names[leaderNum];
