@@ -188,6 +188,14 @@ int main(int argc, char *argv[])
             {
                 id = stoi(peerPart[1]);
                 ringSize = stoi(peerPart[2]);
+                    for (int i = 0; i < ringSize; i++)
+                    {
+                        names[i] = peerPart[3 + i * 3];
+                        ips[i] = peerPart[4 + i * 3];
+                        pPorts[i] = stoi(peerPart[5 + i * 3]);
+                    }
+
+                    int right = (id + 1) % ringSize;
             }
         }
     }
