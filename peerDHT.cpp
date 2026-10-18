@@ -141,7 +141,14 @@ int main(int argc, char *argv[])
                     rightNebPort = pPorts[(id + 1) % ringSize];
                     string fileName = "details-" + to_string(year) + ".csv";
                     ifstream file(fileName);
-
+                    string line;
+                    int count = 0;
+                    while(getline(file, line)){
+                        if(line.find("event_id") == string::npos){
+                            count = count +1;
+                        }
+                    }
+                    
                     for (int i = 1; i < n; i++)
                     {
                         string setMess = "set-id " + to_string(i) + " " + to_string(n);
