@@ -148,6 +148,24 @@ int main(int argc, char *argv[])
                             count = count +1;
                         }
                     }
+                    bool isPrime = false;
+                    int currN = 2 * count+1;
+                    int s = 0;
+                    while(isPrime != true){
+                        isPrime = true;
+                        for(int i=2; i < currN; i++){
+                            if(currN % i ==0){
+                                isPrime=false;
+                            }
+                        }
+                        if(isPrime ==true){
+                            s = currN;
+                        }
+                        else{
+                            currN = currN+1;
+                        }
+                    }
+                    
                     
                     for (int i = 1; i < n; i++)
                     {
