@@ -5,6 +5,7 @@
 #include <sys/select.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <fstream>
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -138,6 +139,8 @@ int main(int argc, char *argv[])
                     }
                     rightNebIP = ips[(id + 1) % ringSize];
                     rightNebPort = pPorts[(id + 1) % ringSize];
+                    string fileName = "details-" + to_string(year) + ".csv";
+                    ifstream file(fileName);
 
                     for (int i = 1; i < n; i++)
                     {
