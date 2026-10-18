@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
     int pPorts[20];
     int id = -1;
     int ringSize = 0;
+    string rightNebIP;
+    int rightNebPort = 0;
     
     while(true)
     {
@@ -134,6 +136,8 @@ int main(int argc, char *argv[])
                         ips[i] = replyPart[2 + i * 3];
                         pPorts[i] = stoi(replyPart[3 + i * 3]);
                     }
+                    rightNebIP = ips[(id + 1) % ringSize];
+                    rightNebPort = pPorts[(id + 1) % ringSize];
 
                     for (int i = 1; i < n; i++)
                     {
@@ -194,8 +198,9 @@ int main(int argc, char *argv[])
                         ips[i] = peerPart[4 + i * 3];
                         pPorts[i] = stoi(peerPart[5 + i * 3]);
                     }
+                    rightNebIP = ips[(id + 1) % ringSize];
+                    rightNebPort = pPorts[(id + 1) % ringSize];
 
-                    int right = (id + 1) % ringSize;
             }
         }
     }
