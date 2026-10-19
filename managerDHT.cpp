@@ -208,6 +208,43 @@ int main(int argc, char *argv[])
 
             sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
         }
-    }
+        else if(part[0] == "query-dht"){
+            string name = part[1];
+            bool isGood = false;
+            for (int i = 0; i < peerNum; i++){
+                if (names[i] == name && states[i] == "Free"){
+                    isGood = true;
+                }
+            }
+            string reply;
+                if (dhtExists == false)
+                {
+                    isGood = false;
+                }
+
+                if (isGood == true)
+                {
+                    int randomNum = rand() % peerNum;
+
+                    while (states[randomNum] != "Leader" && states[randomNum] != "InDHT")
+                    {
+                        randomNum = rand() % peerNum;
+                    }
+
+                    reply = "SUCCESS";
+                    reply = reply + " " + names[randomNum];
+                    reply = reply + " " + ips[randomNum];
+                    reply = reply + " " + to_string(pPorts[randomNum]);
+                 }
+                else
+                {
+                    reply = "FAILURE";
+                }
+
+                sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+            }
+            
+            
+        }
     return 0;
 }
