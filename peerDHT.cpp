@@ -538,6 +538,49 @@ int main(int argc, char *argv[])
         		}
    	 		}
 		}
+			else if(peerPart[0] == "rebuild-dht"){
+    		string leaveName = peerPart[1];
+    		string leaveIP = peerPart[2];
+    		int leavePort = stoi(peerPart[3]);
+
+    		for(int i = 0; i < ringSize; i++){
+     		   	totalRecords[i] = 0;
+    		}
+
+    		string fileName = "details-" + to_string(dhtYear) + ".csv";
+    		ifstream file(fileName);
+    		string line;
+
+    		while(getline(file, line)){
+        		if(line.find("event_id") == string::npos){
+            		int comma = line.find(',');
+            		string event = line.substr(0, comma);
+            		int eventID = stoi(event);
+            		int pos = eventID % s;
+           			int peerID = pos % ringSize;
+
+            		totalRecords[peerID] = totalRecords[peerID] + 1;
+
+            		if(peerID == id){
+                		hashTable[pos] = line;
+            		}
+            		else{
+                		string storeMess = "store " + to_string(peerID) + " " + to_string(pos) + " " + line;
+                		peerMessage(pSock, storeMess, rightNebIP, rightNebPort);
+            		}	
+        		}
+    		}
+
+    		sleep(2);
+
+    		for(int i = 0; i < ringSize; i++){
+        		cout << "Peer " << i << ": " << totalRecords[i] << " records" << endl;
+    		}
+
+    		string completeMess = "rebuild-complete " + myName;
+    		peerMessage(pSock, completeMess, leaveIP, leavePort);
+		}
+			
 			else if(peerPart[0] == "teardown"){
     			for(int i = 0; i < 50000; i++){
         			hashTable[i] = "";
