@@ -49,6 +49,9 @@ int main(int argc, char *argv[])
     int s = 0;
     string hashTable[50000];
     int totalRecords[20] = {};
+    string myName;
+    string myIP;
+    int myPPort = 0;
     
     while(true)
     {
@@ -81,6 +84,9 @@ int main(int argc, char *argv[])
                 string ip = part[2];
                 int mPort = stoi(part[3]);
                 int pPort = stoi(part[4]);
+                myName = name;
+                myIP = ip;
+                myPPort = pPort;
                 
                 peerAdd.sin_port = htons(mPort);
                 bind(sock, (sockaddr *)&peerAdd, sizeof(peerAdd));
@@ -269,6 +275,9 @@ int main(int argc, char *argv[])
                     string dhtName = replyPart[1];
                     string dhtIP = replyPart[2];
                     int dhtPort = stoi(replyPart[3]);
+
+                    string findMess = "find-event " + to_string(eventID) + " " + myName + " " + myIP+ " " + to_string(myPPort);
+                    peerMessage(pSock, findMess, dhtIP, dhtPort);
                 }
                 
             }
