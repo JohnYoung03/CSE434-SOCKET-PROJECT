@@ -7,6 +7,16 @@
 #include <unistd.h>
 #include <fstream>
 using namespace std;
+void peerMessage(int pSock, string message, string ip, int port)
+{
+    sockaddr_in toAdd{};
+    toAdd.sin_family = AF_INET;
+    toAdd.sin_port = htons(port);
+    inet_pton(AF_INET, ip.c_str(), &toAdd.sin_addr);
+
+    sendto(pSock, message.c_str(), message.size(), 0,
+           (sockaddr *)&toAdd, sizeof(toAdd));
+}
 
 int main(int argc, char *argv[])
 {
