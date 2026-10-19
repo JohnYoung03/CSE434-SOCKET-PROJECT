@@ -580,7 +580,29 @@ int main(int argc, char *argv[])
     		string completeMess = "rebuild-complete " + myName;
     		peerMessage(pSock, completeMess, leaveIP, leavePort);
 		}
-			
+			else if(peerPart[0] == "rebuild-complete"){
+    		string newLeader = peerPart[1];
+	    	string rebuildMess = "dht-rebuilt " + myName + " " + newLeader;
+
+    		sendto(sock, rebuildMess.c_str(), rebuildMess.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+    		char mess[1024];
+   			sockaddr_in replyAdd;
+    		socklen_t replyAddSize = sizeof(replyAdd);
+    		int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+    		mess[messSize] = '\0';
+
+    		cout << mess << endl;
+
+    		if(string(mess) == "SUCCESS"){
+        		id = -1;
+        		ringSize = 0;
+        		s = 0;
+        		dhtYear = 0;
+        		rightNebIP = "";
+        		rightNebPort = 0;
+    		}
+		}
 			else if(peerPart[0] == "teardown"){
     			for(int i = 0; i < 50000; i++){
         			hashTable[i] = "";
