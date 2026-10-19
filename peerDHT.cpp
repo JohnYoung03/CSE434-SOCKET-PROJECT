@@ -226,6 +226,19 @@ int main(int argc, char *argv[])
                     for(int i = 0; i < ringSize; i++){
                         cout << "Peer " << i << ": " << totalRecords[i] << " records" << endl;
                     }
+                    string completeMess = "dht-complete " + name;
+                    sendto(sock, completeMess.c_str(), completeMess.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+                    char completeReply[1024];
+
+                    sockaddr_in replyAdd;
+                    socklen_t replyAddSize = sizeof(replyAdd);
+
+                    int completeSize = recvfrom(sock, completeReply, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+
+                    completeReply[completeSize] = '\0';
+
+                    cout << completeReply << endl;
                 }
             }
         }
