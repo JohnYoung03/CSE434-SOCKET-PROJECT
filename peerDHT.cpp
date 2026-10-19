@@ -322,9 +322,27 @@ int main(int argc, char *argv[])
     	if(reply == "SUCCESS"){
      	   string teardownMess = "teardown";
      	   peerMessage(pSock, teardownMess, rightNebIP, rightNebPort);
-    	}
-	 }
-    }
+    		}
+	 	}
+		else if(part[0] == "leave-dht"){
+    		sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+  	  		char mess[1024];
+    		sockaddr_in replyAdd;
+    		socklen_t replyAddSize = sizeof(replyAdd);
+    		int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+    		mess[messSize] = '\0';
+
+    		cout << mess << endl;
+
+    		string reply = mess;
+	
+   	 		if(reply == "SUCCESS"){
+        		string leaveMess = "leave-teardown " + myName;
+        		peerMessage(pSock, leaveMess, rightNebIP, rightNebPort);
+    		}
+		}
+	}
 
         char peerMess[1024];
 
@@ -452,6 +470,74 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+			else if(peerPart[0] == "leave-teardown"){
+    		string leaveName = peerPart[1];
+
+    		if(leaveName != myName){
+        		for(int i = 0; i < 50000; i++){
+            		hashTable[i] = "";
+        		}
+
+        		peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
+    		}
+    		else{
+        		for(int i = 0; i < 50000; i++){
+            		hashTable[i] = "";
+        		}
+
+        		int newSize = ringSize - 1;
+        		string resetMess = "reset-id " + myName + " " + myIP + " " + to_string(myPPort) + " " + to_string(newSize) + " " + to_string(dhtYear) + " " + to_string(s);
+
+        		for(int i = 1; i < ringSize; i++){
+            		int oldID = (id + i) % ringSize;
+            		resetMess = resetMess + " " + names[oldID];
+            		resetMess = resetMess + " " + ips[oldID];
+            		resetMess = resetMess + " " + to_string(pPorts[oldID]);
+        		}
+
+        		peerMessage(pSock, resetMess, rightNebIP, rightNebPort);
+    		}
+		}
+			else if(peerPart[0] == "reset-id"){
+    		string leaveName = peerPart[1];
+    		string leaveIP = peerPart[2];
+    		int leavePort = stoi(peerPart[3]);
+    		int newSize = stoi(peerPart[4]);
+
+    		if(myName == leaveName){
+       		 	string newLeaderName = peerPart[7];
+        		string newLeaderIP = peerPart[8];
+       		 	int newLeaderPort = stoi(peerPart[9]);
+
+        		string rebuildMess = "rebuild-dht " + myName + " " + myIP + " " + to_string(myPPort);
+       			peerMessage(pSock, rebuildMess, newLeaderIP, newLeaderPort);
+    		}
+    		else{
+        		ringSize = newSize;
+       		 	dhtYear = stoi(peerPart[5]);
+        		s = stoi(peerPart[6]);
+
+        		for(int i = 0; i < ringSize; i++){
+            		names[i] = peerPart[7 + i * 3];
+            		ips[i] = peerPart[8 + i * 3];
+           			pPorts[i] = stoi(peerPart[9 + i * 3]);
+
+            		if(names[i] == myName){
+                		id = i;
+            		}
+        		}
+
+        		rightNebIP = ips[(id + 1) % ringSize];
+        		rightNebPort = pPorts[(id + 1) % ringSize];
+
+        		if(id == ringSize - 1){
+            		peerMessage(pSock, peerCommand, leaveIP, leavePort);
+        		}
+        		else{
+            		peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
+        		}
+   	 		}
+		}
 			else if(peerPart[0] == "teardown"){
     			for(int i = 0; i < 50000; i++){
         			hashTable[i] = "";
