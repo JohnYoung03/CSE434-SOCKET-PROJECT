@@ -208,6 +208,13 @@ int main(int argc, char *argv[])
                             int eventID = stoi(event);
                             int pos = eventID % s;
                             int peerID = pos % ringSize;
+                            if (peerID == id){
+                                hashTable[pos] = line;
+                            }
+                            else{
+                                string storeMess = "store " + to_string(peerID) + " " + to_string(pos) + " " + line;
+                                peerMessage(pSock, storeMess, rightNebIP, rightNebPort);
+                            }
                         }
                     }                    
                 }
