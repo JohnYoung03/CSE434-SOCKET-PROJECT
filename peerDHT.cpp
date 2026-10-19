@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <string>
 #include <arpa/inet.h>
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
                     string dhtIP = replyPart[2];
                     int dhtPort = stoi(replyPart[3]);
 
-                    string findMess = "find-event " + to_string(eventID) + " " + myName + " " + myIP+ " " + to_string(myPPort);
+                    string findMess = "find-event " + to_string(eventID) + " " + myName + " " + myIP+ " " + to_string(myPPort) + " 0";
                     peerMessage(pSock, findMess, dhtIP, dhtPort);
                 }
                 
@@ -347,6 +348,67 @@ int main(int argc, char *argv[])
                         peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
                     }
                 }
+				else if (peerPart[0] == "find-event"){
+    			int eventID = stoi(peerPart[1]);
+   				string senderName = peerPart[2];
+    			string senderIP = peerPart[3];
+                int senderPort = stoi(peerPart[4]);
+                int visits = stoi(peerPart[5]);
+                bool beenThere[20] = {};
+
+                for(int i = 0; i < visits; i++){
+                    beenThere[stoi(peerPart[6 + i])] = true;
+                }
+
+                beenThere[id] = true;
+
+                int pos = eventID % s;
+                int peerID = pos % ringSize;
+
+                string idSeq = "";
+            
+                for(int i = 0; i < visits; i++){
+                    idSeq = idSeq + peerPart[6 + i] + " ";
+                }
+
+                idSeq = idSeq + to_string(id);
+
+                 if (peerID == id){
+                    if (hashTable[pos] != ""){
+                        if (stoi(hashTable[pos].substr(0, hashTable[pos].find(','))) == eventID){
+                            peerMessage(pSock, "SUCCESS " + hashTable[pos] + " " + idSeq, senderIP, senderPort);
+                        }
+                        else{
+                            peerMessage(pSock, "FAILURE " + to_string(eventID), senderIP, senderPort);
+                        }
+                    }
+                    else{
+                        peerMessage(pSock, "FAILURE " + to_string(eventID), senderIP, senderPort);
+                    }
+                }
+                else{
+                    if (visits + 1 == ringSize){
+                        peerMessage(pSock, "FAILURE " + to_string(eventID), senderIP, senderPort);
+                    }
+                    else{
+                        int nextID = rand() % ringSize;
+
+                        while(beenThere[nextID] == true){
+                            nextID = rand() % ringSize;
+                        }
+            
+                        string nextMess = "find-event " + to_string(eventID) + " " + senderName + " " + senderIP + " " + to_string(senderPort) + " " + to_string(visits + 1);
+
+                        for(int i = 0; i < visits; i++){
+                            nextMess = nextMess + " " + peerPart[6 + i];
+                        }
+
+                        nextMess = nextMess + " " + to_string(id);
+
+                        peerMessage(pSock, nextMess, ips[nextID], pPorts[nextID]);
+                    }
+                }
+            }
             
         }
     }
