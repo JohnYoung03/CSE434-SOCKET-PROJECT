@@ -243,6 +243,39 @@ int main(int argc, char *argv[])
 
                 sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
             }
+            else if (part[0] == "deregister"){
+            string name = part[1];
+            int peerIndex = -1;
+
+            for(int i = 0; i < peerNum; i++){
+                if(names[i] == name){
+                    peerIndex = i;
+                 }
+            }
+
+            string reply;
+
+            if(peerIndex == -1){
+                reply = "FAILURE";
+            }
+            else if(states[peerIndex] == "InDHT"){
+                reply = "FAILURE";
+            }
+            else{
+                for(int i = peerIndex; i < peerNum - 1; i++){
+                    names[i] = names[i + 1];
+                    ips[i] = ips[i + 1];
+                    mPorts[i] = mPorts[i + 1];
+                    pPorts[i] = pPorts[i + 1];
+                    states[i] = states[i + 1];
+                }
+
+                peerNum = peerNum - 1;
+                reply = "SUCCESS";
+            }
+
+            sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+        }
             
             
         }
