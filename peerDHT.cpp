@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
     int ringSize = 0;
     string rightNebIP;
     int rightNebPort = 0;
+    int s = 0;
     
     while(true)
     {
@@ -160,7 +161,6 @@ int main(int argc, char *argv[])
                     }
                     bool isPrime = false;
                     int currN = 2 * count+1;
-                    int s = 0;
                     while(isPrime != true){
                         isPrime = true;
                         for(int i=2; i < currN; i++){
@@ -195,6 +195,8 @@ int main(int argc, char *argv[])
 
                         sendto(pSock, setMess.c_str(), setMess.size(), 0, (sockaddr *)&toAdd, sizeof(toAdd));
                     }
+                    string sizeMess = "set-size " + to_string(s);
+                    peerMessage(pSock, sizeMess, rightNebIP, rightNebPort);
                 }
             }
         }
@@ -240,6 +242,16 @@ int main(int argc, char *argv[])
                     rightNebPort = pPorts[(id + 1) % ringSize];
 
             }
+            else if (peerPart[0] == "set-size")
+            {
+                s = stoi(peerPart[1]);
+
+                if (id != 0)
+                {
+                    peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
+                }
+            }
+            
         }
     }
 
