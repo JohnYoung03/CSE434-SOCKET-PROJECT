@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <fstream>
+#include <cstdlib>
 using namespace std;
 void peerMessage(int pSock, string message, string ip, int port)
 {
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
     string rightNebIP;
     int rightNebPort = 0;
     int s = 0;
+	int dhtYear = 0;
     string hashTable[50000];
     int totalRecords[20] = {};
     string myName;
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
                 string name = part[1];
                 int n = stoi(part[2]);
                 int year = stoi(part[3]);
-
+				
                 sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
 
                 char mess[1024];
@@ -147,6 +149,7 @@ int main(int argc, char *argv[])
 
                 if (replyPart[0] == "SUCCESS")
                 {
+					dhtYear = year;
                     id = 0;
                     ringSize = n;
 
@@ -195,7 +198,8 @@ int main(int argc, char *argv[])
                             setMess = setMess + " " + ips[j];
                             setMess = setMess + " " + to_string(pPorts[j]);
                         }
-
+						
+						setMess = setMess + " " + to_string(dhtYear);
                         sockaddr_in toAdd{};
                         toAdd.sin_family = AF_INET;
                         toAdd.sin_port = htons(pPorts[i]);
@@ -302,6 +306,24 @@ int main(int argc, char *argv[])
         		return 0;
     		}
 		}
+		else if(part[0] == "teardown-dht"){
+    	sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+    	char mess[1024];
+   	 	sockaddr_in replyAdd;
+    	socklen_t replyAddSize = sizeof(replyAdd);
+    	int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+    	mess[messSize] = '\0';
+
+    	cout << mess << endl;
+
+    	string reply = mess;
+
+    	if(reply == "SUCCESS"){
+     	   string teardownMess = "teardown";
+     	   peerMessage(pSock, teardownMess, rightNebIP, rightNebPort);
+    	}
+	 }
     }
 
         char peerMess[1024];
@@ -335,14 +357,15 @@ int main(int argc, char *argv[])
             {
                 id = stoi(peerPart[1]);
                 ringSize = stoi(peerPart[2]);
-                    for (int i = 0; i < ringSize; i++)
-                    {
-                        names[i] = peerPart[3 + i * 3];
-                        ips[i] = peerPart[4 + i * 3];
-                        pPorts[i] = stoi(peerPart[5 + i * 3]);
-                    }
-                    rightNebIP = ips[(id + 1) % ringSize];
-                    rightNebPort = pPorts[(id + 1) % ringSize];
+                for (int i = 0; i < ringSize; i++)
+                {
+                    names[i] = peerPart[3 + i * 3];
+                    ips[i] = peerPart[4 + i * 3];
+                    pPorts[i] = stoi(peerPart[5 + i * 3]);
+                }
+				dhtYear = stoi(peerPart[3 + ringSize * 3]);
+                rightNebIP = ips[(id + 1) % ringSize];
+                rightNebPort = pPorts[(id + 1) % ringSize];
 
             }
             else if (peerPart[0] == "set-size")
@@ -429,6 +452,40 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+			else if(peerPart[0] == "teardown"){
+    			for(int i = 0; i < 50000; i++){
+        			hashTable[i] = "";
+    			}
+
+    			if(id == 0){
+        			string completeMess = "teardown-complete " + myName;
+        			sendto(sock, completeMess.c_str(), completeMess.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+        			char mess[1024];
+        			sockaddr_in replyAdd;
+       				socklen_t replyAddSize = sizeof(replyAdd);
+        			int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+        			mess[messSize] = '\0';
+
+        			cout << mess << endl;
+
+        			id = -1;
+        			ringSize = 0;
+        			s = 0;
+       				rightNebIP = "";
+       				rightNebPort = 0;
+    			}
+    			else{
+        			peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
+
+        			id = -1;
+        			ringSize = 0;
+        			s = 0;
+        			rightNebIP = "";
+        			rightNebPort = 0;
+    			}
+			}
+					
 			else if (peerPart[0] == "FAILURE"){
    			int eventID = stoi(peerPart[1]);
     		cout << "Storm event " << eventID << " not found in the DHT." << endl;
