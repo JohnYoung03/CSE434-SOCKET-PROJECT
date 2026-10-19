@@ -220,7 +220,12 @@ int main(int argc, char *argv[])
                                 peerMessage(pSock, storeMess, rightNebIP, rightNebPort);
                             }
                         }
-                    }                    
+                    }  
+                    cout << "Waiting 2 seconds" << endl;
+                    sleep(2);
+                    for(int i = 0; i < ringSize; i++){
+                        cout << "Peer " << i << ": " << totalRecords[i] << " records" << endl;
+                    }
                 }
             }
         }
