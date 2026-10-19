@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
     int rightNebPort = 0;
     int s = 0;
     string hashTable[50000];
+    int totalRecords[20] = {};
     
     while(true)
     {
@@ -210,6 +211,7 @@ int main(int argc, char *argv[])
                             int eventID = stoi(event);
                             int pos = eventID % s;
                             int peerID = pos % ringSize;
+                            totalRecords[peerID] = totalRecords[peerID] + 1;
                             if (peerID == id){
                                 hashTable[pos] = line;
                             }
