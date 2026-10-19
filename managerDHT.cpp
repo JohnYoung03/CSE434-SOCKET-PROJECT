@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
     bool waiting = false;
     string waitingFor = "";
     string leader;
+    string leavingPeer = "";
     
     while(true){
         char mess[1024];
@@ -283,7 +284,7 @@ int main(int argc, char *argv[])
         string name = part[1];
         string reply;
 
-        if(name != leader){
+        if(name != leader || dhtExists == false){
             reply = "FAILURE";
         }
         else{
@@ -312,6 +313,72 @@ int main(int argc, char *argv[])
             waiting = false;
             waitingFor = "";
             leader = "";
+            reply = "SUCCESS";
+        }
+
+        sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+    }
+    else if(part[0] == "leave-dht"){
+        string name = part[1];
+        bool isGood = false;
+
+        for(int i = 0; i < peerNum; i++){
+            if(names[i] == name && (states[i] == "Leader" || states[i] == "InDHT")){
+                isGood = true;
+            }
+        }
+
+        string reply;
+
+        if(dhtExists == false){
+            isGood = false;
+        }
+
+        if(isGood == true){
+            reply = "SUCCESS";
+            waiting = true;
+            waitingFor = "dht-rebuilt";
+            leavingPeer = name;
+        }
+        else{
+            reply = "FAILURE";
+        }
+
+        sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+    }
+    else if(part[0] == "dht-rebuilt"){
+        string name = part[1];
+        string newLeader = part[2];
+        int newLeaderNum = -1;
+
+        for(int i = 0; i < peerNum; i++){
+            if(names[i] == newLeader){
+                newLeaderNum = i;
+            }
+        }
+
+        string reply;
+
+        if(name != leavingPeer || newLeaderNum == -1){
+            reply = "FAILURE";
+        }
+        else{
+            for(int i = 0; i < peerNum; i++){
+                if(names[i] == leavingPeer){
+                    states[i] = "Free";
+                }
+                else if(names[i] == newLeader){
+                    states[i] = "Leader";
+                }
+                else if(states[i] == "Leader" || states[i] == "InDHT"){
+                    states[i] = "InDHT";
+                }
+            }
+
+            leader = newLeader;
+            waiting = false;
+            waitingFor = "";
+            leavingPeer = "";
             reply = "SUCCESS";
         }
 
