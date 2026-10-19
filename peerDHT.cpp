@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
                  if (peerID == id){
                     if (hashTable[pos] != ""){
                         if (stoi(hashTable[pos].substr(0, hashTable[pos].find(','))) == eventID){
-                            peerMessage(pSock, "SUCCESS " + hashTable[pos] + " " + idSeq, senderIP, senderPort);
+                            peerMessage(pSock, "SUCCESS " + hashTable[pos] + "|" + idSeq, senderIP, senderPort);
                         }
                         else{
                             peerMessage(pSock, "FAILURE " + to_string(eventID), senderIP, senderPort);
@@ -409,8 +409,45 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+			else if (peerPart[0] == "FAILURE"){
+   			int eventID = stoi(peerPart[1]);
+    		cout << "Storm event " << eventID << " not found in the DHT." << endl;
+			}
+			else if (peerPart[0] == "SUCCESS"){
+    			    int separationPoint = peerCommand.find('|');
+    				string record = peerCommand.substr(8, separationPoint - 8);
+    				string idSeq = peerCommand.substr(separationPoint + 1);
+					string field[14];
+    				int fieldNum = 0;
+
+   					 for(int i = 0; i < record.length(); i++){
+        				if(record[i] == ','){
+           				 	fieldNum++;
+       					 }
+       					 else{
+            				field[fieldNum] = field[fieldNum] + record[i];
+       					 }
+   				 }
+
+    				cout << "event id: " << field[0] << endl;
+    				cout << "state: " << field[1] << endl;
+    				cout << "year: " << field[2] << endl;
+   					cout << "month name: " << field[3] << endl;
+   					cout << "event type: " << field[4] << endl;
+    				cout << "cz type: " << field[5] << endl;
+    				cout << "cz name: " << field[6] << endl;
+    				cout << "injuries direct: " << field[7] << endl;
+    				cout << "injuries indirect: " << field[8] << endl;
+    				cout << "deaths direct: " << field[9] << endl;
+    				cout << "deaths indirect: " << field[10] << endl;
+    				cout << "damage property: " << field[11] << endl;
+    				cout << "damage crops: " << field[12] << endl;
+    				cout << "tor f scale: " << field[13] << endl;
+    				cout << "id-seq: " << idSeq << endl;
+			}
             
         }
+		
     }
 
     return 0;
