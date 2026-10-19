@@ -342,6 +342,39 @@ int main(int argc, char *argv[])
         		peerMessage(pSock, leaveMess, rightNebIP, rightNebPort);
     		}
 		}
+		else if(part[0] == "join-dht"){
+    		sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+    		char mess[1024];
+    		sockaddr_in replyAdd;
+    		socklen_t replyAddSize = sizeof(replyAdd);
+    		int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+    		mess[messSize] = '\0';
+
+    		cout << mess << endl;
+
+    		string reply = mess;
+    		string replyPart[10];
+    		int replyNum = 0;
+
+    		for(int i = 0; i < reply.length(); i++){
+        		if(reply[i] == ' '){
+            		replyNum++;
+       		 }
+        		else{
+            		replyPart[replyNum] = replyPart[replyNum] + reply[i];
+        		}
+    		}
+
+    		if(replyPart[0] == "SUCCESS"){
+        		string leaderName = replyPart[1];
+        		string leaderIP = replyPart[2];
+        		int leaderPort = stoi(replyPart[3]);
+
+        		string joinMess = "askJoin " + myName + " " + myIP + " " + to_string(myPPort);
+        		peerMessage(pSock, joinMess, leaderIP, leaderPort);
+   		 	}
+		}
 	}
 
         char peerMess[1024];
@@ -470,6 +503,110 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+			else if(peerPart[0] == "askJoin"){
+   			string joinName = peerPart[1];
+   		 	string joinIP = peerPart[2];
+    		int joinPort = stoi(peerPart[3]);
+
+    		int newSize = ringSize + 1;
+
+    		string resetJoin = "resetJoin " + joinName + " " + joinIP + " " + to_string(joinPort) + " " + to_string(newSize) + " " + to_string(dhtYear) + " " + to_string(s);
+
+    		for(int i = 0; i < ringSize; i++){
+        		resetJoin = resetJoin + " " + names[i];
+    		resetJoin = resetJoin + " " + ips[i];
+        		resetJoin = resetJoin + " " + to_string(pPorts[i]);
+    		}
+
+   			resetJoin = resetJoin + " " + joinName;
+    		resetJoin = resetJoin + " " + joinIP;
+    		resetJoin = resetJoin + " " + to_string(joinPort);
+
+    		peerMessage(pSock, resetJoin, rightNebIP, rightNebPort);
+		}
+			else if(peerPart[0] == "resetJoin"){
+    			string joinName = peerPart[1];
+    			string joinIP = peerPart[2];
+    			int joinPort = stoi(peerPart[3]);
+    			int newSize = stoi(peerPart[4]);
+
+    			for(int i = 0; i < 50000; i++){
+        			hashTable[i] = "";
+    			}
+
+    			ringSize = newSize;
+    			dhtYear = stoi(peerPart[5]);
+    			s = stoi(peerPart[6]);
+
+    			for(int i = 0; i < ringSize; i++){
+        			names[i] = peerPart[7 + i * 3];
+        			ips[i] = peerPart[8 + i * 3];
+        			pPorts[i] = stoi(peerPart[9 + i * 3]);
+
+        			if(names[i] == myName){
+           				id = i;
+        			}
+    			}
+
+    			rightNebIP = ips[(id + 1) % ringSize];
+    			rightNebPort = pPorts[(id + 1) % ringSize];
+
+    			if(id == 0){
+        			for(int i = 0; i < ringSize; i++){
+            			totalRecords[i] = 0;
+        			}
+
+        			string fileName = "details-" + to_string(dhtYear) + ".csv";
+        			ifstream file(fileName);
+        			string line;
+
+        			while(getline(file, line)){
+            			if(line.find("event_id") == string::npos){
+                			int comma = line.find(',');
+                			string event = line.substr(0, comma);
+                			int eventID = stoi(event);
+                			int pos = eventID % s;
+                			int peerID = pos % ringSize;
+
+                			totalRecords[peerID] = totalRecords[peerID] + 1;
+
+                			if(peerID == id){
+                    			hashTable[pos] = line;
+                			}
+                			else{
+                    			string storeMess = "store " + to_string(peerID) + " " + to_string(pos) + " " + line;
+                    			peerMessage(pSock, storeMess, rightNebIP, rightNebPort);
+                			}
+            			}
+        			}
+
+        			sleep(2);
+
+        			for(int i = 0; i < ringSize; i++){
+            			cout << "Peer " << i << ": " << totalRecords[i] << " records" << endl;
+        			}
+
+        			string completeMess = "join-complete " + myName;
+        			peerMessage(pSock, completeMess, joinIP, joinPort);
+    			}
+    			else{
+        			peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
+    			}
+			}
+			else if(peerPart[0] == "join-complete"){
+    				string newLeader = peerPart[1];
+    				string rebuildMess = "dht-rebuilt " + myName + " " + newLeader;
+
+    				sendto(sock, rebuildMess.c_str(), rebuildMess.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+    				char mess[1024];
+    				sockaddr_in replyAdd;
+    				socklen_t replyAddSize = sizeof(replyAdd);
+    				int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+   					mess[messSize] = '\0';
+
+   				 	cout << mess << endl;
+				}
 			else if(peerPart[0] == "leave-teardown"){
     		string leaveName = peerPart[1];
 
