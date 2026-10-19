@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 
     bool dhtExists = false;
     bool waiting = false;
+    string waitingFor = "";
     string leader;
     
     while(true){
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (waiting == true && part[0] != "dht-complete")
+        if (waiting == true && part[0] != waitingFor)
         {
             string reply = "FAILURE";
 
@@ -155,6 +156,7 @@ int main(int argc, char *argv[])
                 leader = name;
                 dhtExists = true;
                 waiting = true;
+                waitingFor = "dht-complete";
 
             int picked = 1;
 
@@ -199,6 +201,7 @@ int main(int argc, char *argv[])
             if (name == leader)
             {
                 waiting = false;
+                waitingFor = "";
                 reply = "SUCCESS";
             }
             else
@@ -258,7 +261,7 @@ int main(int argc, char *argv[])
             if(peerIndex == -1){
                 reply = "FAILURE";
             }
-            else if(states[peerIndex] == "InDHT"){
+            else if(states[peerIndex] != "Free"){
                 reply = "FAILURE";
             }
             else{
@@ -276,6 +279,44 @@ int main(int argc, char *argv[])
 
             sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
         }
+        else if(part[0] == "teardown-dht"){
+        string name = part[1];
+        string reply;
+
+        if(name != leader){
+            reply = "FAILURE";
+        }
+        else{
+            reply = "SUCCESS";
+            waiting = true;
+            waitingFor = "teardown-complete";
+        }    
+
+        sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+    }
+    else if(part[0] == "teardown-complete"){
+        string name = part[1];
+        string reply;
+
+        if(name != leader){
+            reply = "FAILURE";
+        }
+        else{
+            for(int i = 0; i < peerNum; i++){
+                if(states[i] == "Leader" || states[i] == "InDHT"){
+                    states[i] = "Free";
+                }
+            }
+
+            dhtExists = false;
+            waiting = false;
+            waitingFor = "";
+            leader = "";
+            reply = "SUCCESS";
+        }
+
+        sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+    }
             
             
         }
