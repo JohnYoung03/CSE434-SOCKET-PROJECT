@@ -282,7 +282,27 @@ int main(int argc, char *argv[])
                 }
                 
             }
-        }
+			else if(part[0] == "deregister"){
+    		string name = part[1];
+    		sendto(sock, command.c_str(), command.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+
+    		char mess[1024];
+    		sockaddr_in replyAdd;
+    		socklen_t replyAddSize = sizeof(replyAdd);
+    		int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+    		mess[messSize] = '\0';
+
+    		cout << mess << endl;
+
+    		string reply = mess;
+
+    		if(reply == "SUCCESS"){
+        		close(sock);
+        		close(pSock);
+        		return 0;
+    		}
+		}
+    }
 
         char peerMess[1024];
 
