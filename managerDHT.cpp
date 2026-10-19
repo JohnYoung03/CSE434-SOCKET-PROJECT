@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
     string waitingFor = "";
     string leader;
     string leavingPeer = "";
+    string joiningPeer = "";
     
     while(true){
         char mess[1024];
@@ -346,6 +347,39 @@ int main(int argc, char *argv[])
 
         sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
     }
+    else if(part[0] == "join-dht"){
+        string name = part[1];
+        int joinNum = -1;
+        int leaderNum = -1;
+
+        for(int i = 0; i < peerNum; i++){
+            if(names[i] == name){
+                joinNum = i;
+            }
+
+            if(names[i] == leader){
+                leaderNum = i;
+            }
+        }
+
+        string reply;
+
+        if(joinNum == -1 || states[joinNum] != "Free" || dhtExists == false || leaderNum == -1){
+            reply = "FAILURE";
+        }    
+        else{
+            reply = "SUCCESS";
+            reply = reply + " " + names[leaderNum];
+            reply = reply + " " + ips[leaderNum];
+            reply = reply + " " + to_string(pPorts[leaderNum]);
+
+            waiting = true;
+            waitingFor = "dht-rebuilt";
+            joiningPeer = name;
+        }
+
+        sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
+    }
     else if(part[0] == "dht-rebuilt"){
         string name = part[1];
         string newLeader = part[2];
@@ -359,10 +393,10 @@ int main(int argc, char *argv[])
 
         string reply;
 
-        if(name != leavingPeer || newLeaderNum == -1){
-            reply = "FAILURE";
+        if(newLeaderNum == -1){
+        reply = "FAILURE";
         }
-        else{
+        else if(leavingPeer != "" && name == leavingPeer){
             for(int i = 0; i < peerNum; i++){
                 if(names[i] == leavingPeer){
                     states[i] = "Free";
@@ -381,10 +415,31 @@ int main(int argc, char *argv[])
             leavingPeer = "";
             reply = "SUCCESS";
         }
+        else if(joiningPeer != "" && name == joiningPeer){
+            for(int i = 0; i < peerNum; i++){
+                if(names[i] == joiningPeer){
+                    states[i] = "InDHT";
+                }
+                else if(names[i] == newLeader){
+                    states[i] = "Leader";
+                }
+                else if(states[i] == "Leader" || states[i] == "InDHT"){
+                    states[i] = "InDHT";
+                }
+            }
+
+            leader = newLeader;
+            waiting = false;
+            waitingFor = "";
+            joiningPeer = "";
+            reply = "SUCCESS";
+        }
+        else{
+            reply = "FAILURE";
+        }
 
         sendto(sock, reply.c_str(), reply.size(), 0, (sockaddr *)&peerAddr, peerAddrSize);
-    }
-            
+    }  
             
         }
     return 0;
