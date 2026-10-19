@@ -14,8 +14,7 @@ void peerMessage(int pSock, string message, string ip, int port)
     toAdd.sin_port = htons(port);
     inet_pton(AF_INET, ip.c_str(), &toAdd.sin_addr);
 
-    sendto(pSock, message.c_str(), message.size(), 0,
-           (sockaddr *)&toAdd, sizeof(toAdd));
+    sendto(pSock, message.c_str(), message.size(), 0, (sockaddr *)&toAdd, sizeof(toAdd));
 }
 
 int main(int argc, char *argv[])
@@ -240,6 +239,38 @@ int main(int argc, char *argv[])
 
                     cout << completeReply << endl;
                 }
+            }
+            else if(part[0] =="query-dht"){
+                string name = part[1];
+                int eventID = stoi(part[2]);
+                string queryMess = "query-dht " + name;
+                sendto(sock, queryMess.c_str(), queryMess.size(), 0, (sockaddr *)&manAdd, sizeof(manAdd));
+                char mess[1024];
+                sockaddr_in replyAdd;
+                socklen_t replyAddSize = sizeof(replyAdd);
+                int messSize = recvfrom(sock, mess, 1023, 0, (sockaddr *)&replyAdd, &replyAddSize);
+                mess[messSize] = '\0';
+                cout << mess << endl;
+                string reply = mess;
+                string replyPart[10];
+                int replyNum = 0;
+                for (int i = 0; i < reply.length(); i++)
+                {
+                    if (reply[i] == ' ')
+                    {
+                        replyNum++;
+                    }
+                    else{
+                        replyPart[replyNum] = replyPart[replyNum] + reply[i];
+                    }
+                 }
+
+                if (replyPart[0] == "SUCCESS"){
+                    string dhtName = replyPart[1];
+                    string dhtIP = replyPart[2];
+                    int dhtPort = stoi(replyPart[3]);
+                }
+                
             }
         }
 
