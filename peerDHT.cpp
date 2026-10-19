@@ -196,6 +196,8 @@ int main(int argc, char *argv[])
 
                         sendto(pSock, setMess.c_str(), setMess.size(), 0, (sockaddr *)&toAdd, sizeof(toAdd));
                     }
+                    cout << "Waiting 2 seconds" << endl;
+                    sleep(2);
                     string sizeMess = "set-size " + to_string(s);
                     peerMessage(pSock, sizeMess, rightNebIP, rightNebPort);
                     file.close();
@@ -270,7 +272,21 @@ int main(int argc, char *argv[])
                 {
                     peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
                 }
-            }
+            } else if (peerPart[0] == "store")
+                {
+                    int storeID = stoi(peerPart[1]);
+                    int pos = stoi(peerPart[2]);
+                    int firstPart = peerCommand.find(' ');
+                    int secondPart = peerCommand.find(' ', firstPart + 1);
+                    int thirdPart = peerCommand.find(' ', secondPart + 1);
+                    string record = peerCommand.substr(thirdPart + 1);
+                    if(storeID == id){
+                        hashTable[pos] = record;
+                    }
+                    else{
+                        peerMessage(pSock, peerCommand, rightNebIP, rightNebPort);
+                    }
+                }
             
         }
     }
