@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
     string rightNebIP;
     int rightNebPort = 0;
     int s = 0;
+    string hashTable[50000];
     
     while(true)
     {
@@ -197,6 +198,18 @@ int main(int argc, char *argv[])
                     }
                     string sizeMess = "set-size " + to_string(s);
                     peerMessage(pSock, sizeMess, rightNebIP, rightNebPort);
+                    file.close();
+                    file.open(fileName);
+
+                    while(getline(file, line)){
+                        if(line.find("event_id") == string::npos){
+                            int comma = line.find(',');
+                            string event = line.substr(0, comma);
+                            int eventID = stoi(event);
+                            int pos = eventID % s;
+                            int peerID = pos % ringSize;
+                        }
+                    }                    
                 }
             }
         }
